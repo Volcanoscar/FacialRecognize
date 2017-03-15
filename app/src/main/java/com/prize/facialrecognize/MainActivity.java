@@ -2,13 +2,11 @@ package com.prize.facialrecognize;
 
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -17,41 +15,29 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Cache;
-import com.android.volley.Network;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.BasicNetwork;
-import com.android.volley.toolbox.DiskBasedCache;
-import com.android.volley.toolbox.HurlStack;
-import com.android.volley.toolbox.StringRequest;
-import com.baidu.aip.util.Base64Util;
+import com.prize.facialrecognize.common.ApiClient;
+import com.prize.facialrecognize.common.Base64Util;
+import com.prize.facialrecognize.result.ErrorResult;
+import com.prize.facialrecognize.common.GsonUtils;
 import com.prize.facialrecognize.common.InternetUtil;
-import com.prize.facialrecognize.common.PrizeAipFace;
+import com.prize.facialrecognize.result.MatchResult;
 import com.prize.facialrecognize.common.Utils;
 import com.prize.facialrecognize.permission.PermissionManager;
 
-import org.json.JSONObject;
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static com.prize.facialrecognize.common.Constants.API_KEY;
-import static com.prize.facialrecognize.common.Constants.APP_ID;
-import static com.prize.facialrecognize.common.Constants.MATCH_URL;
-import static com.prize.facialrecognize.common.Constants.SECRET_KEY;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback,
         ActivityCompat.OnRequestPermissionsResultCallback {
 
     private Camera mCamera = null;
     private ImageView takeButton;
-    private ImageView facialCheckButton;
+    //private ImageView facialCheckButton;
     private SurfaceView mSurfaceView;
     private SurfaceHolder mSurfaceHolder;
     public static final String ZSD_MODE_ON = "on";
@@ -63,8 +49,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static final int K_STATE_PREVIEW = 1;
     private static final int K_STATE_FROZEN = 2;
 
-    private Utils mUtils = null;
-    private PrizeAipFace mPrizeAipFace;
+    private String ORIGNAL;
 
 
     @SuppressWarnings("deprecation")
@@ -84,19 +69,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     void bindView() {
-        mUtils = new Utils();
-        mPrizeAipFace = new PrizeAipFace(APP_ID,API_KEY,SECRET_KEY);
+        ORIGNAL = Utils.getOrignal(this);
         mSurfaceView = (SurfaceView) findViewById(R.id.mSurfaceView);
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         takeButton = (ImageView) findViewById(R.id.take_picture);
-        facialCheckButton = (ImageView) findViewById(R.id.facial_check);
+        //facialCheckButton = (ImageView) findViewById(R.id.facial_check);
         takeButton.setOnClickListener(new Button.OnClickListener() {
 
             public void onClick(View arg0) {
 
-                switch(mPreviewState) {
+                switch (mPreviewState) {
                     case K_STATE_FROZEN:
                         mCamera.startPreview();
                         mPreviewState = K_STATE_PREVIEW;
@@ -113,12 +97,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         });
 
-        facialCheckButton.setOnClickListener(new Button.OnClickListener() {
+        /*facialCheckButton.setOnClickListener(new Button.OnClickListener() {
 
             public void onClick(View arg0) {
 
             }
-        });
+        });*/
     }
 
     @Override
@@ -141,14 +125,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.finish();
     }
 
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            return true;
-        }
-        return false;
-    }
-
     public void surfaceCreated(SurfaceHolder surfaceholder) {
         int oritationAdjust = 0;
         try {
@@ -158,7 +134,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             showToast(getString(R.string.cameraback_fail_open));
             mCamera = null;
         }
-
         if (mCamera == null) {
             finish();
         } else {
@@ -197,7 +172,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     public void surfaceDestroyed(SurfaceHolder surfaceholder) {
-
         stopCamera();
     }
 
@@ -239,35 +213,43 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 mPreviewState = K_STATE_FROZEN;
                 if (InternetUtil.isConnectedWifi(MainActivity.this)) {
                     final String mRecog = Base64Util.encode(_data);
-                    Log.i("pengcancan",mRecog);
-                    new AsyncTask<Void,Void,String>(){
+                    Log.i("pengcancan", "mRecog : " + mRecog);
+                    Log.i("pengcancan", "ORIGNAL : " + ORIGNAL);
+                    ApiClient.getInstance().addRequestAsync(ORIGNAL, mRecog, new Callback() {
+
+                        String msg = null;
+
                         @Override
-                        protected String doInBackground(Void... params) {
-                            JSONObject response = mPrizeAipFace.match(mUtils.getOrignal(MainActivity.this),mRecog);
-                            return response.toString();
+                        public void onFailure(Call call, IOException e) {
+                            Log.i("pengcancan", call.toString());
+                            e.printStackTrace();
                         }
 
                         @Override
-                        protected void onPostExecute(String s) {
-                            super.onPostExecute(s);
-                            Log.i("pengcancan",s);
-                        }
-                    }.execute();
+                        public void onResponse(Call call, Response response) throws IOException {
+                            String resultStr = response.body().string();
+                            Log.i("pengcancan", resultStr);
+                            MatchResult result = (MatchResult) GsonUtils.getInstance().strToBean(resultStr, MatchResult.class);
+                            Log.i("pengcancan", "MatchResult : " + result.toString());
+                            if (result.getResult_num() == 0) {
+                                ErrorResult errorResult = (ErrorResult) GsonUtils.getInstance().strToBean(resultStr, ErrorResult.class);
+                                Log.i("pengcancan", "ErrorResult : " + errorResult.toString());
+                                msg = errorResult.getError_msg();
+                            } else {
+                                msg = MainActivity.this.getString(R.string.likelihood) + String.format("%.1f",result.getResults().get(0).getScore()) + "%";
+                            }
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    showToast(msg);
+                                }
+                            });
 
+                        }
+                    });
                 }
             } catch (Exception e) {
 
-            }
-        }
-    };
-
-    public final class AutoFocusCallback implements
-            android.hardware.Camera.AutoFocusCallback {
-
-        public void onAutoFocus(boolean focused, Camera camera) {
-
-            if (focused) {
-                takePicture();
             }
         }
     };

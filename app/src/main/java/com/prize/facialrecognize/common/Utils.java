@@ -3,7 +3,6 @@ package com.prize.facialrecognize.common;
 import android.content.Context;
 import android.util.Log;
 
-import com.baidu.aip.util.Base64Util;
 import com.prize.facialrecognize.R;
 
 import java.io.Closeable;
@@ -19,8 +18,8 @@ public class Utils {
 
     private static final String TAG = "Utils";
 
-    public String getOrignal(Context context) {
-        InputStream is = context.getResources().openRawResource(R.raw.timg);
+    public static String getOrignal(Context context) {
+        InputStream is = context.getResources().openRawResource(R.raw.qwqw);
         try {
             int lenth = is.available();
             byte[] out = new byte[lenth];
@@ -34,7 +33,7 @@ public class Utils {
         return null;
     }
 
-    public void closeSilently(Closeable c) {
+    private static void closeSilently(Closeable c) {
         if (c == null) return;
         try {
             c.close();

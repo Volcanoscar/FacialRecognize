@@ -15,7 +15,6 @@
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="match_parent"
-        android:weightSum="2"
         android:orientation="horizontal">
 
         <RelativeLayout
@@ -31,7 +30,7 @@
                 android:background="@drawable/btn_photo" />
         </RelativeLayout>
 
-        <RelativeLayout
+        <!--<RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1">
@@ -43,7 +42,7 @@
                 android:layout_centerInParent="true"
                 android:layout_weight="1"
                 android:background="@drawable/btn_photo" />
-        </RelativeLayout>
+        </RelativeLayout>-->
 
 
     </LinearLayout>

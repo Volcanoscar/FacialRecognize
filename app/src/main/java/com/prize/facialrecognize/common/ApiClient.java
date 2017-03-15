@@ -1,16 +1,13 @@
 package com.prize.facialrecognize.common;
 
-import android.util.Log;
+import java.util.concurrent.TimeUnit;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.toolbox.HttpHeaderParser;
-
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 
 import static com.prize.facialrecognize.common.Constants.MATCH_URL;
 
@@ -18,48 +15,41 @@ import static com.prize.facialrecognize.common.Constants.MATCH_URL;
  * Created by Administrator on 2017/3/14.
  */
 
-public class ApiClient extends Request<String> {
+public class ApiClient {
 
-    private Map<String, String> mHeaders = null;
-    private Map<String, String> mBody = null;
+    private static ApiClient mInstance;
+    private OkHttpClient client = null;
+    private final static Object mLock = new Object();
+    // 超时时间
+    public static final int TIMEOUT = 30;
 
-    public ApiClient(String url, String ogignal, String toCompare, Response.ErrorListener listener) {
-        super(url, listener);
-        mHeaders = new HashMap<>();
-        mBody = new HashMap<>();
-        mHeaders.put("Content-Type","application/x-www-form-urlencoded");
-        mHeaders.put("accept","*/*");
-        mBody.put("images",ogignal + "," + toCompare);
+    private ApiClient() {
+        client = new OkHttpClient();
+        client.newBuilder().connectTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.SECONDS).build();
     }
 
-    @Override
-    public Map<String, String> getHeaders() throws AuthFailureError {
-        return mHeaders;
-    }
-
-    @Override
-    public int getMethod() {
-        return Method.POST;
-    }
-
-    @Override
-    protected Map<String, String> getParams() throws AuthFailureError {
-        return mBody;
-    }
-
-    @Override
-    protected Response<String> parseNetworkResponse(NetworkResponse response) {
-        String parsed;
-        try {
-            parsed = new String(response.data, HttpHeaderParser.parseCharset(response.headers));
-        } catch (UnsupportedEncodingException e) {
-            parsed = new String(response.data);
+    public static ApiClient getInstance() {
+        if (mInstance == null) {
+            synchronized (mLock) {
+                if (mInstance == null) {
+                    mInstance = new ApiClient();
+                }
+            }
         }
-        return Response.success(parsed, HttpHeaderParser.parseCacheHeaders(response));
+        return mInstance;
     }
 
-    @Override
-    protected void deliverResponse(String response) {
-        Log.i("pengcancan",response);
+    public void addRequestAsync(String orignal, String mRecog, Callback callback){
+        RequestBody body = new FormBody.Builder()
+                .add("images",(orignal + "," + mRecog))
+                .build();
+        Request request = new Request.Builder()
+                .addHeader("Content-Type","application/x-www-form-urlencoded")
+                .post(body)
+                .url(MATCH_URL)
+                .build();
+        client.newCall(request).enqueue(callback);
     }
 }

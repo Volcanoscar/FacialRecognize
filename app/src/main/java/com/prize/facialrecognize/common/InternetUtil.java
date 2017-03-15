@@ -101,7 +101,7 @@ public class InternetUtil {
 			 * Above API level 7, make sure to set android:targetSdkVersion
 			 * to appropriate level to use these
 			 */
-                case TelephonyManager.NETWORK_TYPE_EHRPD: // API level 11
+                case TelephonyManager.NETWORK_TYPE_EHRPD: // API level qwqw
                     return true; // ~ 1-2 Mbps
                 case TelephonyManager.NETWORK_TYPE_EVDO_B: // API level 9
                     return true; // ~ 5 Mbps
@@ -109,7 +109,7 @@ public class InternetUtil {
                     return true; // ~ 10-20 Mbps
                 case TelephonyManager.NETWORK_TYPE_IDEN: // API level 8
                     return false; // ~25 kbps
-                case TelephonyManager.NETWORK_TYPE_LTE: // API level 11
+                case TelephonyManager.NETWORK_TYPE_LTE: // API level qwqw
                     return true; // ~ 10+ Mbps
                 // Unknown
                 case TelephonyManager.NETWORK_TYPE_UNKNOWN:
